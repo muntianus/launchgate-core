@@ -1,0 +1,21 @@
+---
+name: globlex-b2b
+service: globlex-api
+environment: production
+description: "Globex B2B Enterprise Cross-Border Settlement & FX API Release Readiness Policy"
+
+slo:
+  p95_ms: 350
+  p99_ms: 700
+  error_rate_max: 0.005
+  min_rps: 100
+  max_regression_pct: 15
+  conditional_tolerance_pct: 15
+
+finops:
+  finops_max_hourly_usd: 45.0
+
+chaos:
+  require_chaos_pass: false
+  max_recovery_ms: 2500
+  max_drop_rate: 0.02
