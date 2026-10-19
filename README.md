@@ -14,6 +14,9 @@ Built with **100% Go standard library** for zero-dependency reliability and dete
 
 ## CLI Usage
 
+`cmd/launchgate` is the only binary entrypoint. There is deliberately no root `main.go`; always build the
+package explicitly (CI enforces exactly one `main` package):
+
 ```bash
 # Build binary
 go build -o launchgate ./cmd/launchgate

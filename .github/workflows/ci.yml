@@ -19,6 +19,15 @@ jobs:
         with:
           go-version: "1.22"
 
+      - name: Verify single entrypoint
+        run: |
+          mains=$(go list -f '{{if eq .Name "main"}}{{.Dir}}{{end}}' ./... | grep . || true)
+          printf 'main packages:\n%s\n' "${mains:-<none>}"
+          if [ "$mains" != "$PWD/cmd/launchgate" ]; then
+            echo "::error::expected exactly one entrypoint (cmd/launchgate), got: ${mains:-<none>}"
+            exit 1
+          fi
+
       - name: Vet
         run: go vet ./...
 
