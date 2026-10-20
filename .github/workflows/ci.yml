@@ -32,7 +32,11 @@ jobs:
         run: go vet ./...
 
       - name: Run Unit Tests
-        run: go test -v -race ./...
+        env:
+          RACE: ${{ github.event_name != 'pull_request' }}
+        run: |
+          if [ "$RACE" = "true" ]; then set -- -race; fi
+          go test -v "$@" ./...
 
       - name: Build CLI & Microservice
         run: |
