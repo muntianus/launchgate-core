@@ -1,0 +1,512 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "LaunchGate Core",
+    "version": "1.0.0",
+    "description": "Release-readiness gate: evaluates load, FinOps and chaos telemetry against YAML/JSON SLO policies."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4020",
+      "description": "Local / VPS loopback"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Liveness probe (no dependencies)",
+        "tags": [
+          "ops"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Wrong HTTP method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "operationId": "headHealth",
+        "summary": "Liveness probe without a body",
+        "tags": [
+          "ops"
+        ],
+        "responses": {
+          "200": {
+            "description": "Service is up"
+          }
+        }
+      }
+    },
+    "/api/v1/policies": {
+      "get": {
+        "operationId": "listPolicies",
+        "summary": "Built-in SLO policy presets",
+        "tags": [
+          "policies"
+        ],
+        "responses": {
+          "200": {
+            "description": "Presets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "count",
+                    "policies"
+                  ],
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "policies": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Policy"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Wrong HTTP method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluate": {
+      "post": {
+        "operationId": "evaluateRelease",
+        "summary": "Evaluate load, FinOps and chaos telemetry against an SLO policy (GO / CONDITIONAL_GO / NO_GO)",
+        "tags": [
+          "gate"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationInput"
+              },
+              "example": {
+                "policy": "globlex-b2b",
+                "service": "globlex-api",
+                "p95_ms": 320,
+                "error_rate": 0.002,
+                "rps": 150
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gate report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON or unknown policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Wrong HTTP method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/probe": {
+      "post": {
+        "operationId": "probeAndEvaluate",
+        "summary": "Probe a URL with sequential GETs and evaluate the latency against a policy",
+        "tags": [
+          "gate"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProbeRequest"
+              },
+              "example": {
+                "target_url": "https://api.globlex.pro/health",
+                "samples": 5,
+                "policy": "globlex-b2b"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Probe telemetry and gate report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "probe",
+                    "report"
+                  ],
+                  "properties": {
+                    "probe": {
+                      "$ref": "#/components/schemas/ProbeResult"
+                    },
+                    "report": {
+                      "$ref": "#/components/schemas/EvaluationReport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, unknown policy or invalid target_url",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Wrong HTTP method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "required": [
+          "status",
+          "service",
+          "version"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "service": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "Policy": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "p95_ms": {
+            "type": "number"
+          },
+          "p99_ms": {
+            "type": "number"
+          },
+          "error_rate_max": {
+            "type": "number"
+          },
+          "min_rps": {
+            "type": "number"
+          },
+          "finops_max_hourly_usd": {
+            "type": "number"
+          },
+          "max_regression_pct": {
+            "type": "number"
+          },
+          "conditional_tolerance_pct": {
+            "type": "number"
+          },
+          "chaos": {
+            "type": "object"
+          }
+        }
+      },
+      "EvaluationInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Flat metrics or a nested k6 `metrics` summary; `policy` or `custom_policy`.",
+        "properties": {
+          "policy": {
+            "type": "string",
+            "examples": [
+              "globlex-b2b",
+              "perfops-gateway",
+              "aco-control-plane"
+            ]
+          },
+          "custom_policy": {
+            "$ref": "#/components/schemas/Policy"
+          },
+          "service": {
+            "type": "string"
+          },
+          "release_sha": {
+            "type": "string"
+          },
+          "p95_ms": {
+            "type": "number"
+          },
+          "p99_ms": {
+            "type": "number"
+          },
+          "avg_ms": {
+            "type": "number"
+          },
+          "error_rate": {
+            "type": "number"
+          },
+          "rps": {
+            "type": "number"
+          },
+          "metrics": {
+            "type": "object",
+            "description": "k6 summary metrics"
+          },
+          "baseline": {
+            "type": "object"
+          },
+          "finops": {
+            "type": "object"
+          },
+          "chaos": {
+            "type": "object"
+          }
+        }
+      },
+      "ProbeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "target_url": {
+            "type": "string",
+            "format": "uri",
+            "default": "https://api.globlex.pro/health"
+          },
+          "samples": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 5
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "default": 4000
+          },
+          "policy": {
+            "type": "string",
+            "default": "globlex-b2b"
+          },
+          "custom_policy": {
+            "$ref": "#/components/schemas/Policy"
+          },
+          "service": {
+            "type": "string"
+          },
+          "release_sha": {
+            "type": "string"
+          }
+        }
+      },
+      "ProbeResult": {
+        "type": "object",
+        "properties": {
+          "target_url": {
+            "type": "string"
+          },
+          "samples": {
+            "type": "integer"
+          },
+          "successes": {
+            "type": "integer"
+          },
+          "failures": {
+            "type": "integer"
+          },
+          "error_rate": {
+            "type": "number"
+          },
+          "min_ms": {
+            "type": "number"
+          },
+          "avg_ms": {
+            "type": "number"
+          },
+          "p50_ms": {
+            "type": "number"
+          },
+          "p95_ms": {
+            "type": "number"
+          },
+          "p99_ms": {
+            "type": "number"
+          },
+          "max_ms": {
+            "type": "number"
+          },
+          "effective_rps": {
+            "type": "number"
+          },
+          "status_codes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "sample_ms": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "EvaluationReport": {
+        "type": "object",
+        "required": [
+          "verdict",
+          "score",
+          "policy",
+          "checks"
+        ],
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "GO",
+              "CONDITIONAL_GO",
+              "NO_GO"
+            ]
+          },
+          "score": {
+            "type": "integer"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "release_sha": {
+            "type": "string"
+          },
+          "evaluated_at": {
+            "type": "string"
+          },
+          "normalized_metrics": {
+            "type": "object"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "violations": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "remediation_advice": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "regression": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

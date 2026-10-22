@@ -449,20 +449,20 @@ func Evaluate(in EvaluationInput, pol policy.Policy) EvaluationReport {
 
 // ProbeResult captures live HTTP probe statistics against a target endpoint.
 type ProbeResult struct {
-	TargetURL  string    `json:"target_url"`
-	Samples    int       `json:"samples"`
-	Successes  int       `json:"successes"`
-	Failures   int       `json:"failures"`
-	ErrorRate  float64   `json:"error_rate"`
-	MinMs      float64   `json:"min_ms"`
-	AvgMs      float64   `json:"avg_ms"`
-	P50Ms      float64   `json:"p50_ms"`
-	P95Ms      float64   `json:"p95_ms"`
-	P99Ms      float64   `json:"p99_ms"`
-	MaxMs      float64   `json:"max_ms"`
-	EffectiveRPS float64 `json:"effective_rps"`
-	StatusCodes map[int]int `json:"status_codes"`
-	SampleMs   []float64 `json:"sample_ms"`
+	TargetURL    string      `json:"target_url"`
+	Samples      int         `json:"samples"`
+	Successes    int         `json:"successes"`
+	Failures     int         `json:"failures"`
+	ErrorRate    float64     `json:"error_rate"`
+	MinMs        float64     `json:"min_ms"`
+	AvgMs        float64     `json:"avg_ms"`
+	P50Ms        float64     `json:"p50_ms"`
+	P95Ms        float64     `json:"p95_ms"`
+	P99Ms        float64     `json:"p99_ms"`
+	MaxMs        float64     `json:"max_ms"`
+	EffectiveRPS float64     `json:"effective_rps"`
+	StatusCodes  map[int]int `json:"status_codes"`
+	SampleMs     []float64   `json:"sample_ms"`
 }
 
 // ProbeTarget performs a live multi-sample HTTP probe against targetURL and returns latency/error metrics.
