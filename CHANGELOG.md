@@ -5,6 +5,13 @@ versions follow [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- `POST /api/v1/probe` only probes `target_url`s whose host is in `LAUNCHGATE_PROBE_ALLOWED_HOSTS`
+  (default: public globlex.* / perfops.* hosts) over http(s) — 400 for other schemes, 403 for
+  other hosts — and probes no longer follow redirects. Previously any caller could make the gate
+  probe internal addresses and report status codes and latency.
+
 ### Changed
 
 - Adopted the muntianus Repository Standard v1: committed OpenAPI contract

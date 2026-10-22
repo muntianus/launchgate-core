@@ -205,7 +205,17 @@
             }
           },
           "400": {
-            "description": "Malformed JSON, unknown policy or invalid target_url",
+            "description": "Malformed JSON, unknown policy, or target_url is not an absolute http(s) URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "target_url host is not in the allowlist",
             "content": {
               "application/json": {
                 "schema": {
@@ -224,7 +234,8 @@
               }
             }
           }
-        }
+        },
+        "description": "target_url must be an absolute http(s) URL whose host is in LAUNCHGATE_PROBE_ALLOWED_HOSTS (default: the portfolio's public globlex.* / perfops.* hosts); redirects are not followed."
       }
     }
   },
