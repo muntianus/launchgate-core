@@ -480,7 +480,11 @@ func ProbeTarget(ctx context.Context, targetURL string, samples int, timeout tim
 		timeout = 4 * time.Second
 	}
 
-	client := &http.Client{Timeout: timeout}
+	client := &http.Client{
+		Timeout: timeout,
+		// Never follow redirects: a probed host must not bounce traffic elsewhere.
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
 	res := ProbeResult{
 		TargetURL:   targetURL,
 		Samples:     samples,
