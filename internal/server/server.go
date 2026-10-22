@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/muntianus/launchgate-core/internal/evaluator"
@@ -13,6 +16,53 @@ import (
 )
 
 const Version = "1.0.0"
+
+// defaultProbeHosts are the hosts the unauthenticated probe endpoint may send
+// traffic to. Anything else (internal addresses, metadata endpoints, other
+// sites) is refused so the endpoint cannot act as an SSRF / port-scanning proxy.
+// LAUNCHGATE_PROBE_ALLOWED_HOSTS (comma-separated, exact match) overrides it.
+var defaultProbeHosts = []string{
+	"api.globlex.pro",
+	"globlex.pro",
+	"globlex.shop",
+	"globlex.online",
+	"perfops.tech",
+	"app.perfops.tech",
+	"perfops.shop",
+	"aco.perfops.shop",
+	"perfops.ai",
+}
+
+// AllowedProbeHosts returns the probe allowlist, read from the environment on
+// every call so operators can change it without a rebuild.
+func AllowedProbeHosts() []string {
+	var hosts []string
+	for _, h := range strings.Split(os.Getenv("LAUNCHGATE_PROBE_ALLOWED_HOSTS"), ",") {
+		if h = strings.ToLower(strings.TrimSpace(h)); h != "" {
+			hosts = append(hosts, h)
+		}
+	}
+	if len(hosts) == 0 {
+		return defaultProbeHosts
+	}
+	return hosts
+}
+
+// checkProbeTarget returns the HTTP status to answer with when targetURL may
+// not be probed (0 when it is allowed).
+func checkProbeTarget(targetURL string) (int, string) {
+	u, err := url.Parse(targetURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
+		return http.StatusBadRequest, "target_url must be an absolute http(s) URL"
+	}
+	host := strings.ToLower(u.Hostname())
+	for _, allowed := range AllowedProbeHosts() {
+		if host == allowed {
+			return 0, ""
+		}
+	}
+	return http.StatusForbidden, fmt.Sprintf("target_url host %s is not allowed (LAUNCHGATE_PROBE_ALLOWED_HOSTS)", host)
+}
 
 // ProbeRequest is the payload for POST /api/v1/probe.
 type ProbeRequest struct {
@@ -145,6 +195,10 @@ func handleProbe(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.TargetURL == "" {
 		req.TargetURL = "https://api.globlex.pro/health"
+	}
+	if status, msg := checkProbeTarget(req.TargetURL); status != 0 {
+		writeError(w, status, msg)
+		return
 	}
 
 	pol, err := policy.ResolvePolicy(req.PolicyName, req.CustomPolicy)
