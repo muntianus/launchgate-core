@@ -1,0 +1,9 @@
+/bin/
+*.test
+coverage.out
+.DS_Store
+
+# local config — only .env.example is tracked
+.env
+.env.*
+!.env.example

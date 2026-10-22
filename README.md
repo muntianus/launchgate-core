@@ -70,6 +70,19 @@ curl -s -X POST http://localhost:4020/api/v1/evaluate \
 go test -v ./...
 ```
 
+## API contract, CI & deploy
+
+- **Contract:** [`docs/api/openapi.json`](docs/api/openapi.json) (OpenAPI 3.1).
+  `internal/server/contract_test.go` fails when `Routes` in `internal/server/server.go` and the
+  spec disagree.
+- **Tests:** `gofmt -l . && go vet ./... && go test ./...`. CI also builds the single
+  `cmd/launchgate` entrypoint, runs a sample evaluation, and the org security gate
+  (gitleaks + govulncheck).
+- **Config:** every environment variable is listed in [`.env.example`](.env.example).
+- **Deploy:** `docker build -t launchgate-core . && docker run -p 4020:4020 launchgate-core` —
+  static binary on alpine, non-root, `HEALTHCHECK` on `GET /health`. The portfolio port map
+  lives in [`muntianus/architecture`](https://github.com/muntianus/architecture).
+
 ## Contact / Support
 
 PerfOps official Telegram contact: [@perfops_ai_manager](https://t.me/perfops_ai_manager).

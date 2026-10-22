@@ -31,13 +31,29 @@ type ProbeResponse struct {
 	Report evaluator.EvaluationReport `json:"report"`
 }
 
+// Route is one documented endpoint. Handlers still reject other methods with a
+// JSON 405 themselves, so Methods documents rather than enforces.
+type Route struct {
+	Methods []string
+	Path    string
+	Handler http.HandlerFunc
+}
+
+// Routes lists every endpoint the service answers. contract_test.go keeps this
+// table and docs/api/openapi.json in lockstep.
+var Routes = []Route{
+	{Methods: []string{http.MethodGet, http.MethodHead}, Path: "/health", Handler: handleHealth},
+	{Methods: []string{http.MethodGet}, Path: "/api/v1/policies", Handler: handlePolicies},
+	{Methods: []string{http.MethodPost}, Path: "/api/v1/evaluate", Handler: handleEvaluate},
+	{Methods: []string{http.MethodPost}, Path: "/api/v1/probe", Handler: handleProbe},
+}
+
 // NewHandler constructs the HTTP router for LaunchGate Core.
 func NewHandler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", handleHealth)
-	mux.HandleFunc("/api/v1/policies", handlePolicies)
-	mux.HandleFunc("/api/v1/evaluate", handleEvaluate)
-	mux.HandleFunc("/api/v1/probe", handleProbe)
+	for _, route := range Routes {
+		mux.HandleFunc(route.Path, route.Handler)
+	}
 	return withCORS(mux)
 }
 
