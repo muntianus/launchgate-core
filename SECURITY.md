@@ -9,5 +9,6 @@ launchgate-core is an internal PerfOps microservice (default port 4020).
   (placeholder values) is tracked. GitGuardian scans every pull request for
   secrets.
 - The API is unauthenticated and sends `Access-Control-Allow-Origin: *`. `POST /api/v1/probe`
-  makes outbound HTTP requests to a caller-supplied `target_url`; keep the service on
-  loopback / behind Caddy and never expose it publicly.
+  makes outbound requests, so `target_url` must be http(s) with a host in
+  `LAUNCHGATE_PROBE_ALLOWED_HOSTS` (default: the portfolio's public hosts) and redirects are
+  not followed. Never add internal hosts or IPs; keep the service on loopback / behind Caddy.

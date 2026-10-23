@@ -123,6 +123,7 @@ func TestProbeEndpoint(t *testing.T) {
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	}))
 	defer upstream.Close()
+	t.Setenv("LAUNCHGATE_PROBE_ALLOWED_HOSTS", "127.0.0.1")
 
 	h := NewHandler()
 	payload, _ := json.Marshal(map[string]any{
